@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Who Wants to Be a Millionaire - Termokimia XI</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: radial-gradient(ellipse at center, #0a1a3a 0%, #000814 70%, #000 100%);
+    color: #fff; min-height: 100vh; padding: 15px;
+  }
+  h1.title {
+    text-align: center; color: #ffd700; font-size: 1.5rem;
+    text-shadow: 0 0 10px #ff8c00, 0 0 20px #ff4500;
+    margin-bottom: 5px; letter-spacing: 2px;
+  }
+  .subtitle { text-align:center; color:#9ec9ff; font-size:0.85rem; margin-bottom:15px;}
+  .layout { display: grid; grid-template-columns: 220px 1fr; gap: 15px; max-width: 1200px; margin: 0 auto; }
+  @media (max-width: 850px) { .layout { grid-template-columns: 1fr; } .ladder { order: 2; } }
+
+  /* MONEY LADDER */
+  .ladder {
+    background: rgba(0,20,60,0.75); border: 2px solid #1a4a8a;
+    border-radius: 12px; padding: 10px; height: fit-content;
+    max-height: 82vh; overflow-y: auto;
+  }
+  .ladder h3 { text-align:center; color:#ffd700; font-size:0.9rem; margin-bottom:8px;}
+  .ladder ul { list-style:none; }
+  .ladder li {
+    padding: 4px 8px; margin: 2px 0; font-size: 0.75rem;
+    color: #ffb84d; border-radius: 5px; display:flex; justify-content:space-between;
+  }
+  .ladder li.active { background: linear-gradient(90deg,#ff8c00,#ffd700); color:#000; font-weight:bold; box-shadow:0 0 10px #ffd700;}
+  .ladder li.passed { color:#4dff88; }
+
+  /* MAIN PANEL */
+  .panel { display: flex; flex-direction: column; gap: 12px; }
+  .topbar { display:flex; justify-content:space-between; gap:10px; flex-wrap: wrap;}
+  .lifelines { display:flex; gap:8px; }
+  .lifeline {
+    background: linear-gradient(180deg,#1a4a8a,#0a2050);
+    border: 2px solid #ffd700; color:#ffd700; font-weight:bold;
+    padding: 8px 12px; border-radius: 50%; cursor:pointer;
+    width: 52px; height: 52px; font-size: 0.85rem;
+    transition: all 0.2s;
+  }
+  .lifeline:hover:not(:disabled) { background: linear-gradient(180deg,#ffd700,#ff8c00); color:#000; transform: scale(1.05);}
+  .lifeline:disabled { opacity: 0.25; cursor: not-allowed; text-decoration: line-through;}
+
+  .info { color:#9ec9ff; font-size:0.85rem; }
+  .info strong { color:#ffd700; }
+
+  /* QUESTION */
+  .question-box {
+    background: linear-gradient(180deg,#00205a 0%, #001030 100%);
+    border: 3px solid #ffd700; border-radius: 14px; padding: 18px;
+    min-height: 120px; box-shadow: 0 0 25px rgba(255,215,0,0.35);
+    font-size: 1.05rem; line-height: 1.5;
+  }
+  .qnum { color:#ff8c00; font-weight:bold; margin-bottom:6px; font-size:0.85rem; letter-spacing:1px;}
+
+  /* OPTIONS */
+  .options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 650px) { .options { grid-template-columns: 1fr; } }
+  .opt {
+    display:flex; align-items:center; gap:10px;
+    background: linear-gradient(180deg,#001a4d,#000a1f);
+    border: 2px solid #1a4a8a; border-radius: 10px;
+    padding: 12px 14px; cursor:pointer; color: #fff;
+    font-size: 0.92rem; text-align:left; transition: all 0.15s;
+    min-height: 55px;
+  }
+  .opt:hover:not(:disabled) { border-color:#ffd700; background: linear-gradient(180deg,#00306b,#001a4d);}
+  .opt .letter { color:#ffd700; font-weight:bold; font-size:1rem; min-width:18px;}
+  .opt.correct { background: linear-gradient(180deg,#0a7a0a,#054005) !important; border-color:#4dff88 !important; box-shadow:0 0 15px #4dff88;}
+  .opt.wrong { background: linear-gradient(180deg,#7a0a0a,#400505) !important; border-color:#ff4d4d !important;}
+  .opt.removed { visibility: hidden; }
+  .opt:disabled { cursor: default;}
+
+  /* FEEDBACK */
+  .feedback {
+    padding: 12px 16px; border-radius: 10px; font-size: 0.9rem;
+    display: none; line-height:1.5;
+  }
+  .feedback.show { display:block; }
+  .feedback.ok { background: rgba(0,150,0,0.25); border-left: 5px solid #4dff88;}
+  .feedback.no { background: rgba(150,0,0,0.25); border-left: 5px solid #ff4d4d;}
+
+  .btn-next {
+    background: linear-gradient(180deg,#ffd700,#ff8c00); color:#000;
+    font-weight:bold; padding: 12px 28px; border:none; border-radius: 30px;
+    cursor:pointer; font-size:1rem; letter-spacing:1px;
+    display:none; align-self:center;
+  }
+  .btn-next.show { display:block;}
+  .btn-next:hover { transform: scale(1.05);}
+
+  /* MODAL */
+  .modal {
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85);
+    align-items:center; justify-content:center; z-index: 100; padding:20px;
+  }
+  .modal.show { display:flex; }
+  .modal-content {
+    background: linear-gradient(180deg,#00205a,#001030);
+    border: 3px solid #ffd700; border-radius: 16px;
+    padding: 30px; max-width: 520px; text-align:center;
+    box-shadow: 0 0 40px rgba(255,215,0,0.6);
+  }
+  .modal-content h2 { color:#ffd700; margin-bottom:12px; font-size:1.4rem;}
+  .modal-content p { margin-bottom: 12px; line-height:1.6;}
+  .audience-bars { display:flex; gap:12px; justify-content:center; align-items:flex-end; height:150px; margin:20px 0;}
+  .bar-wrap { display:flex; flex-direction:column; align-items:center; gap:6px;}
+  .bar { width: 38px; background: linear-gradient(180deg,#ffd700,#ff8c00); border-radius: 4px 4px 0 0; transition: height 0.4s;}
+  .bar-label { color:#ffd700; font-weight:bold;}
+
+  .final-msg { text-align:center; padding: 30px; }
+  .final-msg h2 { color:#ffd700; font-size: 2rem; margin-bottom: 12px; text-shadow:0 0 20px #ff8c00;}
+  .final-msg .score { font-size: 1.8rem; color: #4dff88; font-weight:bold; margin: 15px 0;}
+</style>
+</head>
+<body>
+
+<h1 class="title">💰 WHO WANTS TO BE A MILLIONAIRE 💰</h1>
+<div class="subtitle">Kuis Termokimia - Kimia Kelas XI A</div>
+
+<div class="layout">
+  <aside class="ladder">
+    <h3>🏆 PAPAN HADIAH</h3>
+    <ul id="ladder-list"></ul>
+  </aside>
+
+  <main class="panel">
+    <div class="topbar">
+      <div class="lifelines">
+        <button class="lifeline" id="ll-5050" title="50:50">50:50</button>
+        <button class="lifeline" id="ll-aud" title="Tanya Audiens">👥</button>
+        <button class="lifeline" id="ll-phn" title="Telepon Teman">📞</button>
+      </div>
+      <div class="info">Soal <strong id="q-now">1</strong>/20 &nbsp;|&nbsp; Hadiah: <strong id="prize-now">Rp 100.000</strong></div>
+    </div>
+
+    <div class="question-box">
+      <div class="qnum" id="qnum">SOAL 1</div>
+      <div id="qtext">Memuat soal...</div>
+    </div>
+
+    <div class="options" id="options"></div>
+    <div class="feedback" id="feedback"></div>
+    <button class="btn-next" id="btn-next">LANJUT ➜</button>
+  </main>
+</div>
+
+<!-- MODAL AUDIENS -->
+<div class="modal" id="modal-aud">
+  <div class="modal-content">
+    <h2>👥 Hasil Polling Audiens</h2>
+    <p>Audiens di kelas XI A memilih jawaban berikut:</p>
+    <div class="audience-bars" id="aud-bars"></div>
+    <button class="btn-next show" onclick="closeModal()">TUTUP</button>
+  </div>
+</div>
+
+<!-- MODAL PHONE -->
+<div class="modal" id="modal-phn">
+  <div class="modal-content">
+    <h2>📞 Telepon Teman</h2>
+    <p id="phone-text">Menghubungi teman...</p>
+    <button class="btn-next show" onclick="closeModal()">TUTUP</button>
+  </div>
+</div>
+
+<!-- MODAL FINAL -->
+<div class="modal" id="modal-final">
+  <div class="modal-content">
+    <div class="final-msg" id="final-content"></div>
+    <button class="btn-next show" onclick="location.reload()">🔄 MAIN LAGI</button>
+  </div>
+</div>
+
+<script>
+/* ================== DATA SOAL ================== */
+const QUESTIONS = [
+  {
+    q: "Reaksi yang melepaskan kalor dari sistem ke lingkungan disebut reaksi...",
+    correct: "Eksoterm",
+    wrong: ["Endoterm", "Isokhorik", "Isoterm", "Adiabatik"],
+    exp: "Reaksi eksoterm melepaskan kalor ke lingkungan sehingga suhu lingkungan naik dan ΔH bernilai negatif."
+  },
+  {
+    q: "Pada reaksi endoterm, kalor...",
+    correct: "Diserap dari lingkungan ke sistem",
+    wrong: ["Dilepas dari sistem ke lingkungan", "Tidak terjadi perpindahan", "Tetap di dalam sistem", "Hilang ke udara sekitar"],
+    exp: "Endoterm menyerap kalor dari lingkungan, suhu lingkungan turun, ΔH positif."
+  },
+  {
+    q: "Jika ΔH suatu reaksi bertanda positif (+), maka reaksi tersebut bersifat...",
+    correct: "Endoterm",
+    wrong: ["Eksoterm", "Tidak berlangsung", "Reversibel", "Irreversibel"],
+    exp: "ΔH positif menandakan sistem menyerap energi → reaksi endoterm."
+  },
+  {
+    q: "Persamaan termokimia pembentukan 1 mol H₂O(l) dari unsur-unsurnya yang benar adalah...",
+    correct: "H₂(g) + ½O₂(g) → H₂O(l) ΔH = -286 kJ",
+    wrong: [
+      "H₂O(l) → H₂(g) + ½O₂(g) ΔH = -286 kJ",
+      "2H₂(g) + O₂(g) → 2H₂O(l) ΔH = -286 kJ",
+      "H₂O(l) → H₂(g) + O₂(g) ΔH = +286 kJ",
+      "H₂(g) + O₂(g) → H₂O(l) ΔH = +286 kJ"
+    ],
+    exp: "ΔH°f adalah pembentukan 1 mol senyawa dari unsur bebasnya. Koefisien H₂ harus 1 dan O₂ = ½."
+  },
+  {
+    q: "Menurut hukum Hess, perubahan entalpi suatu reaksi...",
+    correct: "Tidak bergantung pada jalur reaksi, hanya pada keadaan awal dan akhir",
+    wrong: [
+      "Bergantung pada jalur reaksi yang ditempuh",
+      "Selalu bernilai negatif",
+      "Selalu bernilai positif",
+      "Sama dengan kalor jenis zat"
+    ],
+    exp: "Hukum Hess: ΔH hanya bergantung pada keadaan awal dan akhir, bukan jalur."
+  },
+  {
+    q: "ΔH°f unsur bebas dalam keadaan standar (paling stabil) adalah...",
+    correct: "0 (nol)",
+    wrong: ["1 kJ/mol", "-1 kJ/mol", "100 kJ/mol", "Tidak dapat ditentukan"],
+    exp: "Karena unsur bebas tidak memerlukan pembentukan, ΔH°f-nya = 0."
+  },
+  {
+    q: "Rumus menghitung ΔH reaksi dari data ΔH°f adalah...",
+    correct: "ΔH = ΣΔH°f produk − ΣΔH°f reaktan",
+    wrong: [
+      "ΔH = ΣΔH°f reaktan − ΣΔH°f produk",
+      "ΔH = ΣΔH°f produk + ΣΔH°f reaktan",
+      "ΔH = ΣΔH°f reaktan ÷ ΣΔH°f produk",
+      "ΔH = ΣΔH°f produk × ΣΔH°f reaktan"
+    ],
+    exp: "Produk dikurangi reaktan, masing-masing dikalikan koefisiennya."
+  },
+  {
+    q: "Rumus menghitung ΔH reaksi dari data energi ikatan adalah...",
+    correct: "ΔH = Σ energi ikatan reaktan − Σ energi ikatan produk",
+    wrong: [
+      "ΔH = Σ energi ikatan produk − Σ energi ikatan reaktan",
+      "ΔH = Σ energi ikatan produk + Σ energi ikatan reaktan",
+      "ΔH = Σ energi ikatan reaktan × Σ energi ikatan produk",
+      "ΔH = Σ energi ikatan produk ÷ Σ energi ikatan reaktan"
+    ],
+    exp: "Ikatan pada reaktan diputus (butuh energi), ikatan produk terbentuk (lepas energi)."
+  },
+  {
+    q: "Perubahan entalpi pembakaran standar (ΔH°c) adalah perubahan entalpi ketika...",
+    correct: "1 mol senyawa dibakar sempurna dengan oksigen pada kondisi standar",
+    wrong: [
+      "1 gram senyawa dibakar sempurna",
+      "1 mol senyawa bereaksi dengan air",
+      "1 mol senyawa terurai menjadi unsur-unsurnya",
+      "1 mol senyawa dibentuk dari unsur-unsurnya"
+    ],
+    exp: "ΔH°c selalu untuk 1 mol zat yang dibakar sempurna dengan O₂."
+  },
+  {
+    q: "Contoh reaksi endoterm dalam kehidupan sehari-hari adalah...",
+    correct: "Fotosintesis",
+    wrong: ["Pembakaran kayu", "Respirasi sel", "Perkaratan besi", "Pembakaran LPG"],
+    exp: "Fotosintesis menyerap energi cahaya matahari → endoterm."
+  },
+  {
+    q: "100 g air dipanaskan dari 25 °C menjadi 35 °C. Jika kalor jenis air 4,2 J/g°C, kalor yang diserap air adalah...",
+    correct: "4.200 J",
+    wrong: ["420 J", "42.000 J", "2.100 J", "8.400 J"],
+    exp: "q = m·c·ΔT = 100 × 4,2 × 10 = 4.200 J."
+  },
+  {
+    q: "Perubahan entalpi dari zat cair menjadi gas disebut...",
+    correct: "Entalpi penguapan",
+    wrong: ["Entalpi peleburan", "Entalpi sublimasi", "Entalpi pembekuan", "Entalpi kondensasi"],
+    exp: "Cair → gas = penguapan (vaporization). Sublimasi = padat → gas."
+  },
+  {
+    q: "Diagram tingkat energi reaksi eksoterm menunjukkan bahwa...",
+    correct: "Energi produk lebih rendah dari energi reaktan",
+    wrong: [
+      "Energi produk lebih tinggi dari energi reaktan",
+      "Energi produk sama dengan energi reaktan",
+      "Tidak ada perubahan energi",
+      "Energi reaktan bernilai nol"
+    ],
+    exp: "Karena melepas energi, posisi produk lebih rendah dari reaktan."
+  },
+  {
+    q: "Diketahui ΔH°f CO₂ = -393 kJ/mol; ΔH°f H₂O = -286 kJ/mol; ΔH°f CH₄ = -75 kJ/mol. ΔH pembakaran CH₄ (CH₄ + 2O₂ → CO₂ + 2H₂O) adalah...",
+    correct: "-890 kJ/mol",
+    wrong: ["+890 kJ/mol", "-965 kJ/mol", "-820 kJ/mol", "+965 kJ/mol"],
+    exp: "ΔH = [(-393)+2(-286)] − [(-75)+0] = -965 + 75 = -890 kJ/mol."
+  },
+  {
+    q: "Reaksi A → B memiliki ΔH = -50 kJ/mol. Jika 2 mol A bereaksi sempurna, kalor yang dilepas sebesar...",
+    correct: "100 kJ",
+    wrong: ["50 kJ", "25 kJ", "200 kJ", "150 kJ"],
+    exp: "Kalor = 2 mol × 50 kJ/mol = 100 kJ (dilepas)."
+  },
+  {
+    q: "Bahan bakar dipilih berdasarkan entalpi pembakarannya. Semakin tinggi entalpi pembakaran, maka...",
+    correct: "Semakin banyak energi yang dihasilkan per gram bahan bakar",
+    wrong: [
+      "Semakin sedikit energi yang dihasilkan",
+      "Tidak ada pengaruh terhadap energi",
+      "Semakin rendah suhu pembakarannya",
+      "Semakin murah harganya"
+    ],
+    exp: "ΔH°c tinggi = energi per satuan massa besar → bahan bakar efisien."
+  },
+  {
+    q: "Diketahui energi ikatan: H-H = 436; Cl-Cl = 242; H-Cl = 431 kJ/mol. ΔH reaksi H₂(g) + Cl₂(g) → 2HCl(g) adalah...",
+    correct: "-184 kJ/mol",
+    wrong: ["+184 kJ/mol", "-431 kJ/mol", "+431 kJ/mol", "-862 kJ/mol"],
+    exp: "ΔH = (436+242) − (2×431) = 678 − 862 = -184 kJ/mol."
+  },
+  {
+    q: "Alat yang digunakan untuk mengukur kalor (energi) suatu reaksi adalah...",
+    correct: "Kalorimeter",
+    wrong: ["Termometer", "Barometer", "Manometer", "Higrometer"],
+    exp: "Kalorimeter mengukur perubahan kalor berdasarkan perubahan suhu."
+  },
+  {
+    q: "Reaksi HCl(aq) + NaOH(aq) → NaCl(aq) + H₂O(l) melepaskan kalor. Reaksi ini termasuk...",
+    correct: "Eksoterm",
+    wrong: ["Endoterm", "Netral", "Redoks", "Substitusi"],
+    exp: "Reaksi netralisasi asam-basa umumnya eksoterm (ΔH negatif)."
+  },
+  {
+    q: "Perubahan entalpi standar (ΔH°) diukur pada kondisi...",
+    correct: "Suhu 25 °C dan tekanan 1 atm",
+    wrong: [
+      "Suhu 0 °C dan tekanan 1 atm",
+      "Suhu 25 °C dan tekanan 2 atm",
+      "Suhu 100 °C dan tekanan 1 atm",
+      "Suhu 0 °C dan tekanan 0 atm"
+    ],
+    exp: "Kondisi standar termokimia: 25 °C (298 K) dan 1 atm."
+  }
+];
+
+/* ================== PAPAN HADIAH ================== */
+const PRIZES = [
+  "Rp 100.000","Rp 200.000","Rp 300.000","Rp 500.000","Rp 1.000.000",
+  "Rp 2.000.000","Rp 3.000.000","Rp 5.000.000","Rp 7.500.000","Rp 10.000.000",
+  "Rp 15.000.000","Rp 25.000.000","Rp 50.000.000","Rp 100.000.000","Rp 250.000.000",
+  "Rp 500.000.000","Rp 750.000.000","Rp 1.000.000.000","Rp 1.500.000.000","Rp 2.000.000.000"
+];
+
+/* ================== STATE ================== */
+let currentIndex = 0;
+let score = 0;
+let questionsPool = [];
+let lifelines = { fifty: false, audience: false, phone: false };
+let currentOptions = [];   // array {text, correct}
+let answered = false;
+
+/* ================== INIT ================== */
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function initLadder() {
+  const ul = document.getElementById('ladder-list');
+  ul.innerHTML = '';
+  for (let i = PRIZES.length - 1; i >= 0; i--) {
+    const li = document.createElement('li');
+    li.dataset.idx = i;
+    li.innerHTML = `<span>${i + 1}</span><span>${PRIZES[i]}</span>`;
+    ul.appendChild(li);
+  }
+  updateLadder();
+}
+
+function updateLadder() {
+  document.querySelectorAll('#ladder-list li').forEach(li => {
+    const idx = parseInt(li.dataset.idx);
+    li.classList.remove('active', 'passed');
+    if (idx < currentIndex) li.classList.add('passed');
+    if (idx === currentIndex) li.classList.add('active');
+  });
+}
+
+/* ================== RENDER SOAL ================== */
+function loadQuestion() {
+  answered = false;
+  const q = questionsPool[currentIndex];
+  document.getElementById('qnum').textContent = `SOAL ${currentIndex + 1}`;
+  document.getElementById('qtext').textContent = q.q;
+  document.getElementById('q-now').textContent = currentIndex + 1;
+  document.getElementById('prize-now').textContent = PRIZES[currentIndex];
+  document.getElementById('btn-next').classList.remove('show');
+  const fb = document.getElementById('feedback');
+  fb.classList.remove('show', 'ok', 'no');
+  fb.innerHTML = '';
+
+  // Susun opsi (acak posisi benar)
+  const opts = [
+    { text: q.correct, correct: true },
+    ...q.wrong.map(w => ({ text: w, correct: false }))
+  ];
+  currentOptions = shuffle(opts);
+
+  const container = document.getElementById('options');
+  container.innerHTML = '';
+  const letters = ['A', 'B', 'C', 'D', 'E'];
+  currentOptions.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.dataset.idx = i;
+    btn.innerHTML = `<span class="letter">${letters[i]}.</span><span>${opt.text}</span>`;
+    btn.onclick = () => pickAnswer(i);
+    container.appendChild(btn);
+  });
+
+  updateLadder();
+}
+
+/* ================== PILIH JAWABAN ================== */
+function pickAnswer(idx) {
+  if (answered) return;
+  answered = true;
+
+  const buttons = document.querySelectorAll('.opt');
+  const chosen = currentOptions[idx];
+
+  buttons.forEach((b, i) => {
+    b.disabled = true;
+    if (currentOptions[i].correct) b.classList.add('correct');
+  });
+
+  const fb = document.getElementById('feedback');
+  const q = questionsPool[currentIndex];
+
+  if (chosen.correct) {
+    score++;
+    fb.className = 'feedback show ok';
+    fb.innerHTML = `✅ <strong>BENAR!</strong> ${q.exp}`;
+    // tandai tidak ada yang salah
+  } else {
+    buttons[idx].classList.add('wrong');
+    fb.className = 'feedback show no';
+    fb.innerHTML = `❌ <strong>SALAH.</strong> Jawaban benar: <strong>${q.correct}</strong><br><em>${q.exp}</em>`;
+  }
+
+  if (currentIndex < QUESTIONS.length - 1) {
+    document.getElementById('btn-next').classList.add('show');
+  } else {
+    setTimeout(showFinal, 1400);
+  }
+}
+
+/* ================== NEXT ================== */
+document.getElementById('btn-next').onclick = () => {
+  currentIndex++;
+  if (currentIndex < QUESTIONS.length) {
+    loadQuestion();
+  } else {
+    showFinal();
+  }
+};
+
+/* ================== FINAL ================== */
+function showFinal() {
+  const modal = document.getElementById('modal-final');
+  const content = document.getElementById('final-content');
+  const total = QUESTIONS.length;
+  const persen = Math.round((score / total) * 100);
+  let title, emoji;
+  if (persen === 100) { title = "SEMPURNA!"; emoji = "🏆"; }
+  else if (persen >= 80) { title = "LUAR BIASA!"; emoji = "🥇"; }
+  else if (persen >= 60) { title = "BAGUS!"; emoji = "🥈"; }
+  else if (persen >= 40) { title = "CUKUP BAIK"; emoji = "🥉"; }
+  else { title = "AYO BELAJAR LAGI"; emoji = "📚"; }
+
+  const hadiah = score > 0 ? PRIZES[score - 1] : "Rp 0";
+  content.innerHTML = `
+    <h2>${emoji} ${title} ${emoji}</h2>
+    <p>Skor Akhir Kamu:</p>
+    <div class="score">${score} / ${total} soal</div>
+    <p>Ketepatan: <strong style="color:#ffd700">${persen}%</strong></p>
+    <p>Total Hadiah: <strong style="color:#ffd700">${hadiah}</strong></p>
+  `;
+  modal.classList.add('show');
+}
+
+/* ================== LIFELINES ================== */
+document.getElementById('ll-5050').onclick = () => {
+  if (lifelines.fifty || answered) return;
+  lifelines.fifty = true;
+  document.getElementById('ll-5050').disabled = true;
+
+  const buttons = document.querySelectorAll('.opt');
+  const wrongIdx = currentOptions
+    .map((o, i) => o.correct ? -1 : i)
+    .filter(i => i >= 0);
+  const toRemove = shuffle(wrongIdx).slice(0, 2);
+  toRemove.forEach(i => buttons[i].classList.add('removed'));
+  // hapus elemen tersisa dari currentOptions? cukup visual
+};
+
+document.getElementById('ll-aud').onclick = () => {
+  if (lifelines.audience || answered) return;
+  lifelines.audience = true;
+  document.getElementById('ll-aud').disabled = true;
+
+  const correctIdx = currentOptions.findIndex(o => o.correct);
+  // distribusi: benar ~ 65%, sisanya random
+  const letters = ['A', 'B', 'C', 'D', 'E'];
+  let dist = [0, 0, 0, 0, 0];
+  dist[correctIdx] = 55 + Math.floor(Math.random() * 25);
+  let remaining = 100 - dist[correctIdx];
+  const otherIdx = [0,1,2,3,4].filter(i => i !== correctIdx);
+  otherIdx.forEach((i, k) => {
+    if (k === otherIdx.length - 1) dist[i] = remaining;
+    else {
+      const v = Math.floor(Math.random() * remaining);
+      dist[i] = v;
+      remaining -= v;
+    }
+  });
+  dist = shuffle(dist);
+
+  const barsDiv = document.getElementById('aud-bars');
+  barsDiv.innerHTML = '';
+  letters.forEach((L, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'bar-wrap';
+    wrap.innerHTML = `
+      <div class="bar" style="height:${dist[i] * 1.2}px"></div>
+      <div class="bar-label">${L}<br>${dist[i]}%</div>
+    `;
+    barsDiv.appendChild(wrap);
+  });
+  document.getElementById('modal-aud').classList.add('show');
+};
+
+document.getElementById('ll-phn').onclick = () => {
+  if (lifelines.phone || answered) return;
+  lifelines.phone = true;
+  document.getElementById('ll-phn').disabled = true;
+
+  const correctIdx = currentOptions.findIndex(o => o.correct);
+  const letters = ['A', 'B', 'C', 'D', 'E'];
+  // 85% teman benar
+  const friendChoice = Math.random() < 0.85
+    ? correctIdx
+    : Math.floor(Math.random() * 5);
+
+  const txt = document.getElementById('phone-text');
+  txt.innerHTML = `
+    📱 <em>Ring... ring...</em><br><br>
+    "Halo! Menurutku jawabannya yang <strong style="color:#ffd700; font-size:1.4rem">${letters[friendChoice]}</strong>.<br>
+    Tapi aku nggak 100% yakin juga, ya. Semoga membantu!"
+  `;
+  document.getElementById('modal-phn').classList.add('show');
+};
+
+function closeModal() {
+  document.getElementById('modal-aud').classList.remove('show');
+  document.getElementById('modal-phn').classList.remove('show');
+}
+
+/* ================== START ================== */
+function startGame() {
+  currentIndex = 0;
+  score = 0;
+  lifelines = { fifty: false, audience: false, phone: false };
+  // acak urutan soal
+  questionsPool = shuffle(QUESTIONS);
+  initLadder();
+  loadQuestion();
+}
+
+startGame();
+</script>
+</body>
+</html>
